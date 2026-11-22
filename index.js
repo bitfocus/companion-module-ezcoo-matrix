@@ -48,7 +48,7 @@ export default class EzcooMatrixInstance extends InstanceBase {
 	async configUpdated(config) {
 		this.config = config
 
-		this.config.polling_interval = this.config.polling_interval ?? 60000
+		this.config.poll_interval = this.config.poll_interval ?? 60000
 		this.config.port = this.config.port ?? 23
 
 		this.setActionDefinitions(getActionDefinitions(this))
@@ -207,7 +207,7 @@ export default class EzcooMatrixInstance extends InstanceBase {
 	}
 
 	updateRoute(output, input) {
-		if (!this.socket.isConnected) return
+		if (!this.socket?.isConnected) return
 
 		if (output == 0) {
 			//all outputs
