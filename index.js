@@ -165,7 +165,6 @@ export default class EzcooMatrixInstance extends InstanceBase {
 				reconnect_interval: 10000,
 				reconnect: true,
 			})
-			this.socket._socket.setNoDelay(true)
 
 			this.updateStatus(InstanceStatus.Connecting)
 
