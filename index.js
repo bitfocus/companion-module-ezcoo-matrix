@@ -3,30 +3,28 @@ import { getActionDefinitions } from './actions.js'
 import { getFeedbackDefinitions } from './feedbacks.js'
 import { getPresetDefinitions } from './presets.js'
 import { getConfigFields } from './config.js'
+import { MODELS, FALLBACK_MODEL, describePorts } from './models.js'
+
+/** How long to wait after the last line of an `EZG STA` reply before treating it as complete */
+const DETECT_SETTLE_MS = 500
 
 export default class EzcooMatrixInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
 
-		this.CHOICES_INPUTS = [
-			{ id: '1', label: 'IN1' },
-			{ id: '2', label: 'IN2' },
-			{ id: '3', label: 'IN3' },
-			{ id: '4', label: 'IN4' },
-		]
-		this.CHOICES_OUTPUTS = [
-			{ id: '1', label: 'OUT1' },
-			{ id: '2', label: 'OUT2' },
-			{ id: '3', label: 'OUT3' },
-			{ id: '4', label: 'OUT4' },
-		]
+		this.CHOICES_INPUTS = []
+		this.CHOICES_OUTPUTS = []
 		this.pollMixerTimer = undefined
-		this.selectedInput = 1
-		this.outputRoute = { 1: 1, 2: 2, 3: 3, 4: 4 }
+		this.selectedInput = '1'
+		this.outputRoute = {}
+
+		/** Port counts collected from the `EZG STA` reply currently being received */
+		this.detecting = undefined
+		this.detectTimer = undefined
 	}
 
 	getConfigFields() {
-		return getConfigFields()
+		return getConfigFields(this.config)
 	}
 
 	async destroy() {
@@ -39,6 +37,11 @@ export default class EzcooMatrixInstance extends InstanceBase {
 			clearInterval(this.pollMixerTimer)
 			delete this.pollMixerTimer
 		}
+
+		if (this.detectTimer) {
+			clearTimeout(this.detectTimer)
+			delete this.detectTimer
+		}
 	}
 
 	async init(config) {
@@ -46,19 +49,109 @@ export default class EzcooMatrixInstance extends InstanceBase {
 	}
 
 	async configUpdated(config) {
+		const oldConfig = this.config
 		this.config = config
 
+		this.config.model = this.config.model ?? 'auto'
 		this.config.poll_interval = this.config.poll_interval ?? 60000
 		this.config.port = this.config.port ?? 23
+
+		this.applyPortCounts()
+
+		// Only reconnect when the connection details change, so that saving the detected model doesn't reconnect
+		if (!oldConfig || !this.socket || oldConfig.host !== this.config.host || oldConfig.port !== this.config.port) {
+			this.initTcpSocket()
+		}
+		this.initPolling()
+	}
+
+	/**
+	 * The port counts to use: the chosen model, or the last detected device in auto mode
+	 */
+	getPortCounts() {
+		const model = MODELS[this.config.model]
+		if (model) return model
+
+		if (this.config.detected_inputs > 0 && this.config.detected_outputs > 0) {
+			return { inputs: this.config.detected_inputs, outputs: this.config.detected_outputs }
+		}
+
+		return FALLBACK_MODEL
+	}
+
+	/**
+	 * Rebuild everything which depends on the number of inputs and outputs
+	 */
+	applyPortCounts() {
+		const { inputs, outputs } = this.getPortCounts()
+
+		this.CHOICES_INPUTS = []
+		for (let i = 1; i <= inputs; i++) this.CHOICES_INPUTS.push({ id: `${i}`, label: `IN${i}` })
+
+		this.CHOICES_OUTPUTS = []
+		for (let i = 1; i <= outputs; i++) this.CHOICES_OUTPUTS.push({ id: `${i}`, label: `OUT${i}` })
+
+		// Keep known routes for outputs which still exist
+		const oldRoute = this.outputRoute
+		this.outputRoute = {}
+		for (const output of this.CHOICES_OUTPUTS) {
+			this.outputRoute[output.id] = oldRoute[output.id] ?? `${Math.min(Number(output.id), inputs)}`
+		}
+
+		if (Number(this.selectedInput) > inputs) this.selectedInput = '1'
 
 		this.setActionDefinitions(getActionDefinitions(this))
 		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 		const { structure, presets } = getPresetDefinitions(this)
 		this.setPresetDefinitions(structure, presets)
 		this.initVariables()
+		this.checkAllFeedbacks()
+	}
 
-		this.initTcpSocket()
-		this.initPolling()
+	/**
+	 * Track the highest numbered input and output in an `EZG STA` reply
+	 */
+	trackDetection(tokens) {
+		if (tokens[0] === 'ADDR') {
+			// The start of a status reply
+			this.detecting = { inputs: 0, outputs: 0 }
+		}
+		if (!this.detecting) return
+
+		const outMatch = tokens[1] === 'VS' && tokens[0].match(/^OUT(\d+)$/)
+		if (outMatch) this.detecting.outputs = Math.max(this.detecting.outputs, Number(outMatch[1]))
+
+		const inMatch = tokens[1] === 'EDID' && tokens[0].match(/^IN(\d+)$/)
+		if (inMatch) this.detecting.inputs = Math.max(this.detecting.inputs, Number(inMatch[1]))
+
+		if (this.detectTimer) clearTimeout(this.detectTimer)
+		this.detectTimer = setTimeout(() => {
+			delete this.detectTimer
+			this.finishDetection()
+		}, DETECT_SETTLE_MS)
+	}
+
+	finishDetection() {
+		const detected = this.detecting
+		delete this.detecting
+		if (!detected || detected.inputs < 1 || detected.outputs < 1) return
+
+		const { inputs, outputs } = detected
+		const chosenModel = MODELS[this.config.model]
+		if (chosenModel && (chosenModel.inputs !== inputs || chosenModel.outputs !== outputs)) {
+			this.log(
+				'warn',
+				`Device looks like ${describePorts(inputs, outputs)}, but the config is set to ${chosenModel.label}`,
+			)
+		}
+
+		if (this.config.detected_inputs === inputs && this.config.detected_outputs === outputs) return
+
+		this.log('info', `Detected ${describePorts(inputs, outputs)}`)
+		this.config = { ...this.config, detected_inputs: inputs, detected_outputs: outputs }
+		this.saveConfig(this.config)
+
+		if (!chosenModel) this.applyPortCounts()
 	}
 
 	initTcpSocket() {
@@ -148,6 +241,8 @@ export default class EzcooMatrixInstance extends InstanceBase {
 				IN3 SIG STA 0
 				IN4 SIG STA 1
 				*/
+				this.trackDetection(tokens)
+
 				switch (tokens[1]) {
 					case 'VS':
 						this.updateRoute(tokens[0].slice(-1), tokens[2].slice(-1))
@@ -214,7 +309,7 @@ export default class EzcooMatrixInstance extends InstanceBase {
 			this.CHOICES_OUTPUTS.forEach((item) => {
 				this.outputRoute[item.id] = input
 			})
-		} else {
+		} else if (output in this.outputRoute) {
 			this.outputRoute[output] = input
 		}
 

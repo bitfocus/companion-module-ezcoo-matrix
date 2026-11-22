@@ -107,11 +107,12 @@ export function getPresetDefinitions(self) {
 		}
 	}
 
+	const lastOutput = self.CHOICES_OUTPUTS[self.CHOICES_OUTPUTS.length - 1]
 	presets['in-to-out'] = {
 		type: 'simple',
 		name: 'In to Out',
 		style: {
-			text: 'IN1 to OUT4',
+			text: `IN1 to ${lastOutput.label}`,
 			size: 'auto',
 			color: combineRgb(255, 255, 255),
 			bgcolor: combineRgb(0, 0, 0),
@@ -123,7 +124,7 @@ export function getPresetDefinitions(self) {
 						actionId: 'input_output',
 						options: {
 							input: '1',
-							output: '4',
+							output: lastOutput.id,
 						},
 					},
 				],

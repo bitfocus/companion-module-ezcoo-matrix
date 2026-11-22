@@ -1,7 +1,33 @@
 import { Regex } from '@companion-module/base'
+import { MODELS, describePorts } from './models.js'
 
-export function getConfigFields() {
+export function getConfigFields(config) {
+	const detectedInputs = config?.detected_inputs
+	const detectedOutputs = config?.detected_outputs
+	const detectedText =
+		detectedInputs && detectedOutputs
+			? `Last connected device: ${describePorts(detectedInputs, detectedOutputs)}`
+			: 'No device has been detected yet'
+
 	return [
+		{
+			type: 'dropdown',
+			id: 'model',
+			label: 'Model',
+			width: 6,
+			default: 'auto',
+			choices: [
+				{ id: 'auto', label: 'Auto detect' },
+				...Object.entries(MODELS).map(([id, model]) => ({ id, label: model.label })),
+			],
+		},
+		{
+			type: 'static-text',
+			id: 'detected_info',
+			label: 'Detected model',
+			width: 6,
+			value: detectedText,
+		},
 		{
 			type: 'textinput',
 			id: 'host',
