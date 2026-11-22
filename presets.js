@@ -1,159 +1,183 @@
 import { combineRgb } from '@companion-module/base'
 
+// Template values are strings, to match the ids of the input/output dropdowns
+const INPUT_EXPR = { isExpression: true, value: '$(local:input)' }
+const OUTPUT_EXPR = { isExpression: true, value: '$(local:output)' }
+
 export function getPresetDefinitions(self) {
 	const presets = {}
 
-	for (const input of self.CHOICES_INPUTS) {
-		presets[`select_${input.id}`] = {
-			type: 'simple',
-			name: 'Select',
-			style: {
-				text: `${input.label}\\n> $(${self.label}:input_route${input.id})`,
-				size: 'auto',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'select_input',
-							options: {
-								input: input.id,
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [
-				{
-					feedbackId: 'selected',
-					options: {
-						input: input.id,
-					},
-					style: {
-						color: combineRgb(0, 0, 0),
-						bgcolor: combineRgb(255, 0, 0),
-					},
-				},
-			],
-		}
-	}
-
-	for (const output of self.CHOICES_OUTPUTS) {
-		presets[`switch_output_${output.id}`] = {
-			type: 'simple',
-			name: 'Switch',
-			style: {
-				text: `${output.label}\\n< $(${self.label}:output_route${output.id})`,
-				size: 'auto',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'switch_output',
-							options: {
-								output: output.id,
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [
-				{
-					feedbackId: 'output',
-					options: {
-						output: output.id,
-					},
-					style: {
-						color: combineRgb(0, 0, 0),
-						bgcolor: combineRgb(0, 255, 0),
-					},
-				},
-			],
-		}
-	}
-
-	for (const input of self.CHOICES_INPUTS) {
-		presets[`all_${input.id}`] = {
-			type: 'simple',
-			name: 'All',
-			style: {
-				text: `All\\n${input.label}`,
-				size: '18',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(32, 0, 0),
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'all',
-							options: {
-								selected: false,
-								input: input.id,
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [],
-		}
-	}
-
-	const lastOutput = self.CHOICES_OUTPUTS[self.CHOICES_OUTPUTS.length - 1]
-	presets['in-to-out'] = {
+	presets['select_input'] = {
 		type: 'simple',
-		name: 'In to Out',
+		name: 'Select input X',
 		style: {
-			text: `IN1 to ${lastOutput.label}`,
+			text: `IN$(local:input)\\n> $(${self.label}:input_route$(local:input))`,
 			size: 'auto',
 			color: combineRgb(255, 255, 255),
 			bgcolor: combineRgb(0, 0, 0),
 		},
 		steps: [
 			{
-				down: [
-					{
-						actionId: 'input_output',
-						options: {
-							input: '1',
-							output: lastOutput.id,
-						},
-					},
-				],
+				down: [{ actionId: 'select_input', options: { input: INPUT_EXPR } }],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'selected',
+				options: { input: INPUT_EXPR },
+				style: {
+					color: combineRgb(0, 0, 0),
+					bgcolor: combineRgb(255, 0, 0),
+				},
+			},
+		],
+		localVariables: [{ variableType: 'simple', variableName: 'input', startupValue: '1' }],
+	}
+
+	presets['switch_output'] = {
+		type: 'simple',
+		name: 'Switch output X to selected input',
+		style: {
+			text: `OUT$(local:output)\\n< $(${self.label}:output_route$(local:output))`,
+			size: 'auto',
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 0, 0),
+		},
+		steps: [
+			{
+				down: [{ actionId: 'switch_output', options: { output: OUTPUT_EXPR } }],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'output',
+				options: { output: OUTPUT_EXPR },
+				style: {
+					color: combineRgb(0, 0, 0),
+					bgcolor: combineRgb(0, 255, 0),
+				},
+			},
+		],
+		localVariables: [{ variableType: 'simple', variableName: 'output', startupValue: '1' }],
+	}
+
+	presets['all'] = {
+		type: 'simple',
+		name: 'All outputs to input X',
+		style: {
+			text: `All\\nIN$(local:input)`,
+			size: '18',
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(32, 0, 0),
+		},
+		steps: [
+			{
+				down: [{ actionId: 'all', options: { selected: false, input: INPUT_EXPR } }],
 				up: [],
 			},
 		],
 		feedbacks: [],
+		localVariables: [{ variableType: 'simple', variableName: 'input', startupValue: '1' }],
+	}
+
+	presets['input_output'] = {
+		type: 'simple',
+		name: 'Input X to output Y',
+		style: {
+			text: `IN$(local:input)\\nto OUT$(local:output)`,
+			size: 'auto',
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 0, 0),
+		},
+		steps: [
+			{
+				down: [{ actionId: 'input_output', options: { input: INPUT_EXPR, output: OUTPUT_EXPR } }],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'input_output',
+				options: { input: INPUT_EXPR, output: OUTPUT_EXPR },
+				style: {
+					color: combineRgb(0, 0, 0),
+					bgcolor: combineRgb(0, 255, 0),
+				},
+			},
+		],
+		localVariables: [
+			{ variableType: 'simple', variableName: 'input', startupValue: '1' },
+			{ variableType: 'simple', variableName: 'output', startupValue: '1' },
+		],
 	}
 
 	const structure = [
 		{
 			id: 'select_input',
 			name: 'Select Input',
-			definitions: self.CHOICES_INPUTS.map((input) => `select_${input.id}`),
+			definitions: [
+				{
+					id: 'select_input',
+					type: 'template',
+					name: '',
+					presetId: 'select_input',
+					templateVariableName: 'input',
+					templateValues: self.CHOICES_INPUTS.map((input) => ({ name: `Select ${input.label}`, value: input.id })),
+				},
+			],
 		},
 		{
 			id: 'switch_output',
 			name: 'Switch Output',
-			definitions: self.CHOICES_OUTPUTS.map((output) => `switch_output_${output.id}`),
+			description: 'Route the selected input to an output',
+			definitions: [
+				{
+					id: 'switch_output',
+					type: 'template',
+					name: '',
+					presetId: 'switch_output',
+					templateVariableName: 'output',
+					templateValues: self.CHOICES_OUTPUTS.map((output) => ({
+						name: `Switch ${output.label}`,
+						value: output.id,
+					})),
+				},
+			],
 		},
 		{
 			id: 'all',
 			name: 'All',
-			definitions: self.CHOICES_INPUTS.map((input) => `all_${input.id}`),
+			definitions: [
+				{
+					id: 'all',
+					type: 'template',
+					name: '',
+					presetId: 'all',
+					templateVariableName: 'input',
+					templateValues: self.CHOICES_INPUTS.map((input) => ({
+						name: `All outputs to ${input.label}`,
+						value: input.id,
+					})),
+				},
+			],
 		},
 		{
 			id: 'in_to_out',
 			name: 'In to Out',
-			definitions: ['in-to-out'],
+			definitions: self.CHOICES_OUTPUTS.map((output) => ({
+				id: `in_to_out_${output.id}`,
+				type: 'template',
+				name: output.label,
+				presetId: 'input_output',
+				templateVariableName: 'input',
+				templateValues: self.CHOICES_INPUTS.map((input) => ({
+					name: `${input.label} to ${output.label}`,
+					value: input.id,
+				})),
+				commonVariableValues: { output: output.id },
+			})),
 		},
 	]
 
