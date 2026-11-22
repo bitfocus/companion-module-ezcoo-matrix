@@ -1,10 +1,10 @@
-import { InstanceBase, InstanceStatus, TCPHelper, runEntrypoint } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, TCPHelper } from '@companion-module/base'
 import { getActionDefinitions } from './actions.js'
 import { getFeedbackDefinitions } from './feedbacks.js'
 import { getPresetDefinitions } from './presets.js'
 import { getConfigFields } from './config.js'
 
-class EzcooMatrixInstance extends InstanceBase {
+export default class EzcooMatrixInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
 
@@ -53,7 +53,8 @@ class EzcooMatrixInstance extends InstanceBase {
 
 		this.setActionDefinitions(getActionDefinitions(this))
 		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
-		this.setPresetDefinitions(getPresetDefinitions(this))
+		const { structure, presets } = getPresetDefinitions(this)
+		this.setPresetDefinitions(structure, presets)
 		this.initVariables()
 
 		this.initTcpSocket()
@@ -152,7 +153,7 @@ class EzcooMatrixInstance extends InstanceBase {
 						this.updateRoute(tokens[0].slice(-1), tokens[2].slice(-1))
 						break
 				}
-				this.checkFeedbacks()
+				this.checkAllFeedbacks()
 			}
 		}
 	}
@@ -160,7 +161,7 @@ class EzcooMatrixInstance extends InstanceBase {
 	sendCommmand(cmd) {
 		if (cmd !== undefined) {
 			if (this.socket !== undefined && this.socket.isConnected) {
-				this.socket.send(cmd + '\r\n').catch((e) => {
+				this.socket.sendAsync(cmd + '\r\n').catch((e) => {
 					this.log('debug', `Send failed: ${e?.message ?? e}`)
 				})
 			} else {
@@ -221,23 +222,17 @@ class EzcooMatrixInstance extends InstanceBase {
 	}
 
 	initVariables() {
-		let variableDefinitions = []
-		this.CHOICES_INPUTS.forEach((item) => {
-			variableDefinitions.push({
-				variableId: `input_route${item.id}`,
-				name: `Input ${item.id}`,
-			})
-		})
-		this.CHOICES_OUTPUTS.forEach((item) => {
-			variableDefinitions.push({
-				variableId: `output_route${item.id}`,
-				name: `Output ${item.id}`,
-			})
-		})
+		const variableDefinitions = {}
+		for (const item of this.CHOICES_INPUTS) {
+			variableDefinitions[`input_route${item.id}`] = { name: `Input ${item.id}` }
+		}
+		for (const item of this.CHOICES_OUTPUTS) {
+			variableDefinitions[`output_route${item.id}`] = { name: `Output ${item.id}` }
+		}
 		this.setVariableDefinitions(variableDefinitions)
 
 		this.updateVariableValues()
 	}
 }
 
-runEntrypoint(EzcooMatrixInstance, [])
+export const UpgradeScripts = []

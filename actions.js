@@ -14,7 +14,7 @@ export function getActionDefinitions(self) {
 			callback: (action) => {
 				self.selectedInput = action.options.input
 
-				self.checkFeedbacks()
+				self.checkAllFeedbacks()
 			},
 		},
 		switch_output: {
@@ -32,7 +32,7 @@ export function getActionDefinitions(self) {
 				self.sendCommmand(`EZS OUT${action.options.output} VS IN${self.selectedInput}`)
 				self.updateRoute(action.options.output, self.selectedInput)
 
-				self.checkFeedbacks()
+				self.checkAllFeedbacks()
 			},
 		},
 		input_output: {
@@ -57,7 +57,7 @@ export function getActionDefinitions(self) {
 				self.sendCommmand(`EZS OUT${action.options.output} VS IN${action.options.input}`)
 				self.updateRoute(action.options.output, action.options.input)
 
-				self.checkFeedbacks()
+				self.checkAllFeedbacks()
 			},
 		},
 		all: {
@@ -87,7 +87,7 @@ export function getActionDefinitions(self) {
 					self.updateRoute(key, myInput)
 				}
 
-				self.checkFeedbacks()
+				self.checkAllFeedbacks()
 			},
 		},
 	}

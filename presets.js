@@ -5,11 +5,10 @@ export function getPresetDefinitions(self) {
 
 	for (const input of self.CHOICES_INPUTS) {
 		presets[`select_${input.id}`] = {
-			type: 'button',
-			category: 'Select Input',
+			type: 'simple',
 			name: 'Select',
 			style: {
-				text: `${input.label}\\n> $(${self.config.label}:input_route${input.id})`,
+				text: `${input.label}\\n> $(${self.label}:input_route${input.id})`,
 				size: 'auto',
 				color: combineRgb(255, 255, 255),
 				bgcolor: combineRgb(0, 0, 0),
@@ -44,11 +43,10 @@ export function getPresetDefinitions(self) {
 
 	for (const output of self.CHOICES_OUTPUTS) {
 		presets[`switch_output_${output.id}`] = {
-			type: 'button',
-			category: 'Switch Output',
+			type: 'simple',
 			name: 'Switch',
 			style: {
-				text: `${output.label}\\n< $(${self.config.label}:output_route${output.id})`,
+				text: `${output.label}\\n< $(${self.label}:output_route${output.id})`,
 				size: 'auto',
 				color: combineRgb(255, 255, 255),
 				bgcolor: combineRgb(0, 0, 0),
@@ -83,8 +81,7 @@ export function getPresetDefinitions(self) {
 
 	for (const input of self.CHOICES_INPUTS) {
 		presets[`all_${input.id}`] = {
-			type: 'button',
-			category: 'All',
+			type: 'simple',
 			name: 'All',
 			style: {
 				text: `All\\n${input.label}`,
@@ -111,8 +108,7 @@ export function getPresetDefinitions(self) {
 	}
 
 	presets['in-to-out'] = {
-		type: 'button',
-		category: 'In to Out',
+		type: 'simple',
 		name: 'In to Out',
 		style: {
 			text: 'IN1 to OUT4',
@@ -137,5 +133,28 @@ export function getPresetDefinitions(self) {
 		feedbacks: [],
 	}
 
-	return presets
+	const structure = [
+		{
+			id: 'select_input',
+			name: 'Select Input',
+			definitions: self.CHOICES_INPUTS.map((input) => `select_${input.id}`),
+		},
+		{
+			id: 'switch_output',
+			name: 'Switch Output',
+			definitions: self.CHOICES_OUTPUTS.map((output) => `switch_output_${output.id}`),
+		},
+		{
+			id: 'all',
+			name: 'All',
+			definitions: self.CHOICES_INPUTS.map((input) => `all_${input.id}`),
+		},
+		{
+			id: 'in_to_out',
+			name: 'In to Out',
+			definitions: ['in-to-out'],
+		},
+	]
+
+	return { structure, presets }
 }

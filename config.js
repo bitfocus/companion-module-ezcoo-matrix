@@ -3,13 +3,6 @@ import { Regex } from '@companion-module/base'
 export function getConfigFields() {
 	return [
 		{
-			type: 'static-text',
-			id: 'info',
-			width: 12,
-			label: 'Information',
-			value: 'This module will connect to an EZCOO MX44-HAS2 4x4 HDMI Matrix switch.',
-		},
-		{
 			type: 'textinput',
 			id: 'host',
 			label: 'IP Address',
@@ -45,14 +38,14 @@ export function getConfigFields() {
 		{
 			type: 'checkbox',
 			id: 'log_responses',
-			label: 'Debug returned data    :',
+			label: 'Debug returned data:',
 			default: false,
 			width: 6,
 		},
 		{
 			type: 'checkbox',
 			id: 'log_tokens',
-			label: 'Debug token data    :',
+			label: 'Debug token data:',
 			default: false,
 			width: 6,
 		},

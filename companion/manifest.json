@@ -1,4 +1,6 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"type": "connection",
 	"id": "ezcoo-matrix",
 	"name": "ezcoo-matrix",
 	"shortname": "ezcoo-matrix",
