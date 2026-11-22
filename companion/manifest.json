@@ -21,11 +21,6 @@
 		"entrypoint": "../index.js"
 	},
 	"manufacturer": "EZCOO",
-	"products": [
-		"MX44-HAS2 4x4 HDMI Matrix",
-		"MX42HS 4x2 HDMI Matrix"
-	],
-	"keywords": [
-		"HDMI Matrix"
-	]
+	"products": ["MX44-HAS2 4x4 HDMI Matrix", "MX42HS 4x2 HDMI Matrix"],
+	"keywords": ["HDMI Matrix"]
 }
